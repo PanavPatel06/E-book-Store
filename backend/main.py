@@ -8,7 +8,10 @@ import time
 from typing import Optional, List
 from duckduckgo_search import DDGS
 
-from . import database as db
+try:
+    from . import database as db
+except (ImportError, ValueError):
+    import database as db
 
 # Project Root Directory Setup
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -486,4 +489,18 @@ else:
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
+    import sys
+    
+    port = int(os.environ.get("PORT", 8000))
+    is_prod = os.environ.get("PORT") is not None
+    
+    if is_prod:
+        # Run directly without string reload in production
+        uvicorn.run(app, host="0.0.0.0", port=port)
+    else:
+        # Ensure parent directory is in sys.path for local reload
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(current_dir)
+        if parent_dir not in sys.path:
+            sys.path.insert(0, parent_dir)
+        uvicorn.run("backend.main:app", host="0.0.0.0", port=port, reload=True)
